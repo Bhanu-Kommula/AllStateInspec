@@ -1,0 +1,23 @@
+package com.auto.technician.dashboard.controller;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+
+
+public class TechDashboardController {
+
+	
+
+    
+    
+    @PostMapping("get-accpeted-posts")
+    public ResponseEntity<?> getTechAcceptedPosts(@RequestBody GetAllTechAcceptedPostsbyEmail dto){
+    	
+    	
+		return service.getAcceptedPosts(dto);
+    	
+    	
+    }
+    
+}

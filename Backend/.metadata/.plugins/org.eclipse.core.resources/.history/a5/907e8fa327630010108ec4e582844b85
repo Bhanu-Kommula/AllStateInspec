@@ -1,0 +1,20 @@
+package com.auto.technician.dashboard.clients;
+
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+
+import com.auto.technician.dashboard.dto.DealerPostUpdateDto;
+
+
+@FeignClient(name = "postings")
+public interface PostingClient {
+
+
+   // @GetMapping("/post")
+   // List<PostingDTO> getAllPostings();
+	
+	 @PostMapping("/submit-post")
+	    public DealerPostUpdateDto submitPost(@RequestBody DealerPostUpdateDto request);
+
+}

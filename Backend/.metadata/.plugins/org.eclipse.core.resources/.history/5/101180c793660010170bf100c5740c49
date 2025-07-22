@@ -1,0 +1,46 @@
+package com.auto.dealer.controller;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.auto.dealer.dto.LoginDealerDto;
+import com.auto.dealer.model.Dealer;
+import com.auto.dealer.service.DealerService;
+
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+
+@RestController
+@RequiredArgsConstructor
+public class DealerController {
+	
+	private final DealerService service;
+	
+	@PostMapping("/register")
+	public ResponseEntity<?> register(@Valid @RequestBody Dealer dealer) {
+		
+		service.register(dealer);
+		
+		return ResponseEntity.status(201).body(dealer);
+		
+	}
+	
+	
+	@PostMapping("/login")
+	public ResponseEntity<?> login( @RequestBody LoginDealerDto dealer){
+		
+		
+	    return service.login(dealer.getEmail());
+		
+		
+		
+	}
+	
+	@PostMapping("/update-profile")
+	public ResponseEntity<?> updateProfile(@RequestBody UpdateDealerDto dto) {
+	    return service.updateProfile(dto);
+	}
+
+}

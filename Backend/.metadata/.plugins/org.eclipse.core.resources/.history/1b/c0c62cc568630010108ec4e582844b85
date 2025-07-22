@@ -1,0 +1,14 @@
+package com.auto.tech.dto;
+
+import lombok.Data;
+
+@Data
+public class PostingDTO {
+    private Long id;
+    private String name;
+    private String email;
+    private String content;
+    private String location;
+    private String offerAmount;
+    private String Status;
+}

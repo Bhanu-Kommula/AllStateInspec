@@ -1,0 +1,16 @@
+package com.auto.tech.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Entity
+@Table(name = "accepted_posts")
+@AllArgsConstructor
+@NoArgsConstructor
+@Data
+public class AcceptedPostsDto {
+	
+	private 
+
+}

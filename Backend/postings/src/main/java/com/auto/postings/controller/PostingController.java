@@ -1,0 +1,103 @@
+package com.auto.postings.controller;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.auto.postings.dto.DealerAcceptedPostUpdateFromTechDashDto;
+import com.auto.postings.dto.DeletePostRequestByIdDto;
+import com.auto.postings.dto.EditPostRequestDto;
+import com.auto.postings.dto.GetAllPostsByEmailRequestDto;
+import com.auto.postings.dto.GetByFiltersDto;
+import com.auto.postings.dto.PostRequestDto;
+import com.auto.postings.model.Posting;
+import com.auto.postings.service.PostingService;
+
+import lombok.RequiredArgsConstructor;
+
+@RestController
+@RequiredArgsConstructor
+public class PostingController {
+
+    private final PostingService service;
+
+    @PostMapping("/submit-post")
+    public Posting submitPost(@RequestBody PostRequestDto request) {
+        return service.savePosting(
+                request.getEmail(),
+                request.getContent(),
+                request.getLocation(),
+                request.getOfferAmount(),
+                request.getStatus()
+               
+        );
+        
+    }
+    
+    @PostMapping("/update-multiple-acceptedpost-from-Techdash")
+    public List<DealerAcceptedPostUpdateFromTechDashDto> submitMultiplePost(@RequestBody List<DealerAcceptedPostUpdateFromTechDashDto> request) {
+        List<Posting> updated = service.saveMultiplePostings(request);
+
+        return updated.stream().map(p -> {
+            DealerAcceptedPostUpdateFromTechDashDto dto = new DealerAcceptedPostUpdateFromTechDashDto();
+            dto.setPostId(p.getId());
+            dto.setStatus(p.getStatus());
+            dto.setAcceptedAt(p.getAcceptedAt()); // ✅ updated field
+            dto.setTechnicianName(p.getTechnicianName());
+            dto.setTechnicianEmail(p.getTechnicianEmail());
+            dto.setExpectedCompletionBy(p.getExpectedCompletionBy());
+            return dto;
+        }).collect(Collectors.toList());
+    }
+
+
+    
+    
+    @PostMapping("/posts-by-email")
+    public List<Posting> getAllPostsbyEmail(@RequestBody GetAllPostsByEmailRequestDto email) {
+        return service.getAllPosts(email);
+    }
+    
+
+    @GetMapping("/post")
+    public List<Posting> getAllPost() {
+        return service.getAllPost();
+    }
+    
+    
+   
+    @PostMapping("/delete-by-id")
+    public String deletePostByID(@RequestBody DeletePostRequestByIdDto id) {
+    	return service.deletePostById(id);
+    }
+    
+    @GetMapping("/post/{id}")
+    public Posting getPostById(@PathVariable Long id) {
+        return service.getPostById(id);
+    }
+    
+    
+    @PostMapping("/posts-update-id")
+    public ResponseEntity<String> updatePost(@RequestBody EditPostRequestDto dto) {
+        String result = service.updatePostById(dto);
+        return ResponseEntity.ok(result);
+    }
+
+    
+    @PostMapping("/filters")
+    public List<Posting> getByFilter(@RequestBody GetByFiltersDto dto){
+    	
+    	return service.getByFilter(dto);
+    	
+    	
+    }
+    
+    
+    
+}

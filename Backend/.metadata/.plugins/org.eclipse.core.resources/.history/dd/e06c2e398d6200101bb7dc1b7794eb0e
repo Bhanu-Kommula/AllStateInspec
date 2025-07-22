@@ -1,0 +1,12 @@
+package com.auto.tech.model;
+
+@Component
+public class WebSocketDealerNotifier {
+
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
+
+    public void notifyNewPost(Posting post) {
+        messagingTemplate.convertAndSend("/topic/new-post", post);
+    }
+}

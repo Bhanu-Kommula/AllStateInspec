@@ -1,0 +1,9 @@
+package com.auto.dealer.repository;
+
+import com.auto.dealer.model.DealerAuditLog;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface DealerAuditLogRepository extends JpaRepository<DealerAuditLog, Long> {
+    Optional<Dealer> findByEmail(String email);  // ✅ Add this method
+
+}

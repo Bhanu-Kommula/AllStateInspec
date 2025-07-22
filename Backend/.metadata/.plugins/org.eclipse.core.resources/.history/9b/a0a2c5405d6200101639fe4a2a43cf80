@@ -1,0 +1,5 @@
+package com.auto.tech.dto;
+
+public class TechDeclinedPostsDto {
+
+}

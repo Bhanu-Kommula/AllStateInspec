@@ -1,0 +1,11 @@
+package com.auto.tech.dto;
+
+@Data
+public class TechDeclinedPostsDto {
+	
+
+	private long postId;
+	private String email;
+	
+
+}

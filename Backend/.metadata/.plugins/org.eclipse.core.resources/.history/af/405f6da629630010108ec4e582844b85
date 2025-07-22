@@ -1,0 +1,84 @@
+package com.auto.postings.controller;
+
+import java.util.List;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.auto.postings.dto.DeletePostRequestByIdDto;
+import com.auto.postings.dto.EditPostRequestDto;
+import com.auto.postings.dto.GetAllPostsByEmailRequestDto;
+import com.auto.postings.dto.GetByFiltersDto;
+import com.auto.postings.dto.PostRequestDto;
+import com.auto.postings.model.Posting;
+import com.auto.postings.service.PostingService;
+
+import lombok.RequiredArgsConstructor;
+
+@RestController
+@RequiredArgsConstructor
+public class PostingController {
+
+    private final PostingService service;
+
+    @PostMapping("/submit-post")
+    public Posting submitPost(@RequestBody PostRequestDto request) {
+        return service.savePosting(
+                request.getEmail(),
+                request.getContent(),
+                request.getLocation(),
+                request.getOfferAmount(),
+                request.getStatus()
+               
+        );
+    }
+    
+    
+    @PostMapping("/update-multiple-acceptedpost-from-Techdash")
+    public List<Posting> submitMultiplePost(@RequestBody List<PostRequestDto> request) {
+        return service.saveMultiplePostings(request);
+    }
+
+    
+    
+    
+    @PostMapping("/posts-by-email")
+    public List<Posting> getAllPostsbyEmail(@RequestBody GetAllPostsByEmailRequestDto email) {
+        return service.getAllPosts(email);
+    }
+    
+
+    @GetMapping("/post")
+    public List<Posting> getAllPost() {
+        return service.getAllPost();
+    }
+    
+    
+   
+    @PostMapping("/delete-by-id")
+    public String deletePostByID(@RequestBody DeletePostRequestByIdDto id) {
+    	return service.deletePostById(id);
+    }
+    
+    
+    @PostMapping("/posts-update-id")
+    public ResponseEntity<String> updatePost(@RequestBody EditPostRequestDto dto) {
+        String result = service.updatePostById(dto);
+        return ResponseEntity.ok(result);
+    }
+
+    
+    @PostMapping("/filters")
+    public List<Posting> getByFilter(@RequestBody GetByFiltersDto dto){
+    	
+    	return service.getByFilter(dto);
+    	
+    	
+    }
+    
+    
+    
+}

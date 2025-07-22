@@ -1,0 +1,102 @@
+package com.auto.dealer.service;
+
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+
+import com.auto.dealer.dto.PostingDto;
+import com.auto.dealer.dto.UpdateDealerDto;
+import com.auto.dealer.model.Dealer;
+import com.auto.dealer.model.DealerAuditLog;
+import com.auto.dealer.repository.DealerAuditLogRepository;
+import com.auto.dealer.repository.DealerRepository;
+
+import lombok.RequiredArgsConstructor;
+
+@Service
+@RequiredArgsConstructor
+public class DealerService {
+	
+	private final DealerRepository repo;
+    private final DealerAuditLogRepository auditRepo;
+
+	public Dealer register(Dealer dealer) {
+		repo.save(dealer);
+		return dealer;
+	}
+	
+	
+	public ResponseEntity<?> login(String email) {
+	    Optional<Dealer> dealerOpt = repo.findByEmail(email);
+
+	    if (dealerOpt.isPresent()) {
+	        Dealer dealer = dealerOpt.get();
+	        PostingDto postingInfo = PostingDto.builder()
+	        		.email(dealer.getEmail())
+	        		.name(dealer.getName())
+	        		.build();
+	        return ResponseEntity.ok(postingInfo); 
+	    } else {
+	        Map<String, String> error = new HashMap<>();
+	        error.put("error", "User not found. Please check your email.");
+	        return ResponseEntity.status(401).body(error);
+	    }
+	}
+
+	
+	public ResponseEntity<?> updateProfile(UpdateDealerDto dto) {
+	    Optional<Dealer> optDealer = repo.findById(dto.getId());
+
+	    if (optDealer.isEmpty()) {
+            return ResponseEntity.status(404).body("Dealer not found");
+        }
+
+        Dealer dealer = optDealer.get();
+
+        // Field-by-field update with audit logging
+        if (dto.getName() != null && !dto.getName().equals(dealer.getName())) {
+            saveAudit(dealer.getId(), "name", dealer.getName(), dto.getName(), dto.getUpdatedBy());
+            dealer.setName(dto.getName());
+        }
+
+        if (dto.getEmail() != null && !dto.getEmail().equals(dealer.getEmail())) {
+            saveAudit(dealer.getId(), "email", dealer.getEmail(), dto.getEmail(), dto.getUpdatedBy());
+            dealer.setEmail(dto.getEmail());
+        }
+
+        if (dto.getPassword() != null && !dto.getPassword().equals(dealer.getPassword())) {
+            saveAudit(dealer.getId(), "password", "********", "********", dto.getUpdatedBy()); // Masked
+            dealer.setPassword(dto.getPassword());
+        }
+
+        if (dto.getLocation() != null && !dto.getLocation().equals(dealer.getLocation())) {
+            saveAudit(dealer.getId(), "location", dealer.getLocation(), dto.getLocation(), dto.getUpdatedBy());
+            dealer.setLocation(dto.getLocation());
+        }
+
+        if (dto.getZipcode() != null && !dto.getZipcode().equals(dealer.getZipcode())) {
+            saveAudit(dealer.getId(), "zipcode", dealer.getZipcode(), dto.getZipcode(), dto.getUpdatedBy());
+            dealer.setZipcode(dto.getZipcode());
+        }
+
+        repo.save(dealer);
+        return ResponseEntity.ok(dealer);
+    }
+
+    private void saveAudit(Long dealerId, String fieldName, String oldVal, String newVal, String updatedBy) {
+        DealerAuditLog log = DealerAuditLog.builder()
+                .dealerId(dealerId)
+                .fieldName(fieldName)
+                .oldValue(oldVal)
+                .newValue(newVal)
+                .updatedAt(LocalDateTime.now())
+                .updatedBy(updatedBy)
+                .build();
+        auditRepo.save(log);
+    }
+
+}

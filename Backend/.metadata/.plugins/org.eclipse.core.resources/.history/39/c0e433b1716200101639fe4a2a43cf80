@@ -1,0 +1,20 @@
+package com.auto.tech.repository;
+
+import java.util.List;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
+
+import com.auto.tech.model.TechAcceptedPost;
+
+import feign.Param;
+
+@Repository
+public interface AcceptedPostRepository  extends JpaRepository<TechAcceptedPost, Long>{
+	
+
+	 @Query("SELECT t.postId FROM accepted_posts t WHERE t.email = :email")
+	    List<Long> findAllAcceptedPostIdsByEmail(@Param("email") String email);
+
+}

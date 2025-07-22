@@ -1,0 +1,11 @@
+package com.auto.tech.repository;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import com.auto.tech.model.TechAcceptedPost;
+
+@Repository
+public interface AcceptedPostRepository  extends JpaRepository<TechAcceptedPost, Long>{
+
+}

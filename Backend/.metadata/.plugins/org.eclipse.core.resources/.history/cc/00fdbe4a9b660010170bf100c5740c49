@@ -1,0 +1,97 @@
+package com.auto.dealer.service;
+
+import java.time.LocalDateTime;
+import java.util.Optional;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+
+import com.auto.dealer.dto.PostingDto;
+import com.auto.dealer.dto.UpdateDealerDto;
+import com.auto.dealer.model.Dealer;
+import com.auto.dealer.model.DealerAuditLog;
+import com.auto.dealer.repository.DealerAuditLogRepository;
+import com.auto.dealer.repository.DealerRepository;
+
+import lombok.RequiredArgsConstructor;
+
+@Service
+@RequiredArgsConstructor
+public class DealerService {
+
+    private final DealerRepository repo;
+    private final DealerAuditLogRepository auditRepo;
+
+    public Dealer register(Dealer dealer) {
+        return repo.save(dealer);
+    }
+    
+    
+
+    public ResponseEntity<?> login(String email) {
+        Optional<Dealer> dealerOpt = repo.findByEmail(email);
+        if (dealerOpt.isPresent()) {
+            Dealer dealer = dealerOpt.get();
+            PostingDto postingInfo = PostingDto.builder()
+                    .email(dealer.getEmail())
+                    .name(dealer.getName())
+                    .build();
+            return ResponseEntity.ok(postingInfo);
+        } else {
+            return ResponseEntity.status(404).body("Dealer not found");
+        }
+    }
+    
+    
+    public ResponseEntity<?> updateDealer(UpdateDealerDto dto) {
+        if (!isValid(dto.getEmail())) {
+            return ResponseEntity.badRequest().body("Email is required for update.");
+        }
+
+        Optional<Dealer> dealerOpt = repo.findByEmail(dto.getEmail());
+        if (dealerOpt.isEmpty()) {
+            return ResponseEntity.status(404).body("Dealer not found");
+        }
+
+        Dealer dealer = dealerOpt.get();
+
+        if (isValid(dto.getName()) && !dto.getName().equals(dealer.getName())) {
+            logChange(dealer, "name", dealer.getName(), dto.getName(), dto.getUpdatedBy());
+            dealer.setName(dto.getName());
+        }
+
+        if (isValid(dto.getPassword()) && !dto.getPassword().equals(dealer.getPassword())) {
+            logChange(dealer, "password", "********", "********", dto.getUpdatedBy());
+            dealer.setPassword(dto.getPassword());
+        }
+
+        if (isValid(dto.getLocation()) && !dto.getLocation().equals(dealer.getLocation())) {
+            logChange(dealer, "location", dealer.getLocation(), dto.getLocation(), dto.getUpdatedBy());
+            dealer.setLocation(dto.getLocation());
+        }
+
+        if (isValid(dto.getZipcode()) && !dto.getZipcode().equals(dealer.getZipcode())) {
+            logChange(dealer, "zipcode", dealer.getZipcode(), dto.getZipcode(), dto.getUpdatedBy());
+            dealer.setZipcode(dto.getZipcode());
+        }
+
+        repo.save(dealer);
+        return ResponseEntity.ok("Dealer updated successfully");
+    }
+
+    private void logChange(Dealer dealer, String field, String oldValue, String newValue, String updatedBy) {
+        DealerAuditLog log = DealerAuditLog.builder()
+                .dealerId(dealer.getId())
+                .fieldName(field)
+                .oldValue(oldValue)
+                .newValue(newValue)
+                .updatedBy(updatedBy)
+                .updatedAt(LocalDateTime.now())
+                .build();
+        auditRepo.save(log);
+    }
+
+    private boolean isValid(String value) {
+        return value != null && !value.isBlank();
+    }
+}

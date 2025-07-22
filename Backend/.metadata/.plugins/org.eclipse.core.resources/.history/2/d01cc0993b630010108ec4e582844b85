@@ -1,0 +1,94 @@
+package com.auto.technician.dashboard.service;
+
+
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+
+import com.auto.technician.dashboard.clients.PostingClient;
+import com.auto.technician.dashboard.clients.TechnicianClient;
+import com.auto.technician.dashboard.dto.DealerPostUpdateDto;
+import com.auto.technician.dashboard.dto.FeignEmailRequestDto;
+import com.auto.technician.dashboard.dto.TechnicianDto;
+import com.auto.technician.dashboard.dto.TechnicianPostsDTO;
+
+import lombok.RequiredArgsConstructor;
+
+@Service
+@RequiredArgsConstructor
+public class TechnicianDashboardService {
+	
+    private final TechnicianClient technicianClient;
+
+	private final PostingClient postingClient;
+
+	public ResponseEntity<?> getAcceptedPosts(FeignEmailRequestDto dto) {
+	    TechnicianDto technician = technicianClient.getTechnicianByEmail(dto);
+	    if (technician == null) {
+	        return ResponseEntity.status(404).body("Technician not found.");
+	    }
+
+	    List<Long> acceptedPostIds = technicianClient.getAcceptedPostsByEmail(dto);
+	    if (acceptedPostIds == null || acceptedPostIds.isEmpty()) {
+	        return ResponseEntity.ok("No accepted posts found for this technician.");
+	    }
+
+	    List<TechnicianPostsDTO> allPostings = technicianClient.getAllPostingsFromPostingsService(dto);
+
+	    List<TechnicianAcceptedPostResponseDto> acceptedPosts = allPostings.stream()
+	        .filter(p -> acceptedPostIds.contains(p.getId()))
+	        .map(p -> {
+	            if (p.getStatus() != null && p.getStatus().equalsIgnoreCase("Pending")) {
+	                Date now = new Date();
+	                p.setStatus("ACCEPTED");
+	                p.setAcceptedAt(now);
+
+	                Calendar cal = Calendar.getInstance();
+	                cal.setTime(now);
+	                cal.add(Calendar.DATE, 7);
+	                p.setCompleteBy(cal.getTime());
+	            }
+
+	            p.setTechnicianName(technician.getName());
+	            p.setTechnicianEmail(technician.getEmail());
+
+	            // Create response object
+	            TechnicianAcceptedPostResponseDto response = new TechnicianAcceptedPostResponseDto();
+	            response.setPostId(p.getId()); // ✅ renamed field
+	            response.setName(p.getName());
+	            response.setEmail(p.getEmail());
+	            response.setContent(p.getContent());
+	            response.setLocation(p.getLocation());
+	            response.setOfferAmount(p.getOfferAmount());
+	            response.setStatus(p.getStatus());
+	            response.setTechnicianEmail(p.getTechnicianEmail());
+	            response.setTechnicianName(p.getTechnicianName());
+	            response.setAcceptedAt(p.getAcceptedAt());
+	            response.setCompleteBy(p.getCompleteBy());
+
+	            return response;
+	        })
+	        .collect(Collectors.toList());
+
+	    return ResponseEntity.ok(acceptedPosts);
+	}
+
+
+	
+	public ResponseEntity<?> onAcceptedDealerSidePostUpdate(List<DealerPostUpdateDto> acceptedPosts) {
+	    try {
+	        // Call postings-service via Feign to update the dealer's posts
+	        List<DealerPostUpdateDto> updatedPosts = postingClient.submitMultiplePost(acceptedPosts);
+
+	        return ResponseEntity.ok(updatedPosts); // return what posting service responds with
+	    } catch (Exception e) {
+	        return ResponseEntity.status(500).body("Failed to update dealer-side posts: " + e.getMessage());
+	    }
+	
+	
+	}
+}

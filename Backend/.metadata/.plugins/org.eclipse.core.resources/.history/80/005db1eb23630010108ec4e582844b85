@@ -1,0 +1,82 @@
+package com.auto.technician.dashboard.service;
+
+
+@Service
+@RequiredArgsConstructor
+public class TechnicianDashboardService {
+	
+    private final TechnicianClient technicianClient;
+
+	private final PostingClient postingClient;
+
+	public ResponseEntity<?> getAcceptedPosts(FeignEmailRequestDto dto) {
+        TechnicianDto technician = technicianClient.getTechnicianByEmail(dto);
+        if (technician == null) {
+            return ResponseEntity.status(404).body("Technician not found.");
+        }
+        
+         List<Long> acceptedPostIds = technicianClient.getAcceptedPostsByEmail(dto);
+         if (acceptedPostIds == null || acceptedPostIds.isEmpty()) {
+             return ResponseEntity.ok("No accepted posts found for this technician.");
+         }
+
+         // Step 3: Fetch All Posts
+         List<TechnicianPostsDTO> allPostings = technicianClient.getAllPostingsFromPostingsService(dto);
+
+         // Step 4: Filter Only Accepted Posts
+
+         List<TechnicianPostsDTO> acceptedPosts = allPostings.stream()
+             .filter(p -> acceptedPostIds.contains(p.getId()))
+             .peek(p -> {
+                 if (p.getStatus() != null && p.getStatus().equalsIgnoreCase("Pending")) {
+                     p.setStatus("ACCEPTED");
+
+                     // ✅ Set acceptedAt = now
+                     Date now = new Date();
+                     p.setAcceptedAt(now);
+
+                     // ✅ Set completeBy = now + 7 days
+                     Calendar cal = Calendar.getInstance();
+                     cal.setTime(now);
+                     cal.add(Calendar.DATE, 7);
+                     p.setCompleteBy(cal.getTime());
+                 }
+             })
+             .collect(Collectors.toList());
+
+
+         return ResponseEntity.ok(acceptedPosts);
+         
+
+
+	}
+	
+	public ResponseEntity<?>  onAcceptedDealerSidePostUpdate(List<DealerPostUpdateDto> acceptedPosts) {
+		
+		
+
+	    DealerPostUpdateDto dealerSidePostUpdates = postingClient.submitPost( DealerPostUpdateDto request) {
+	    	
+	    }
+
+	
+	    return ResponseEntity.ok(acceptedPosts);
+	
+	}	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+
+}

@@ -1,0 +1,13 @@
+package com.auto.technician.dashboard.dto;
+
+import lombok.Data;
+
+@Data
+public class TechAcceptedPostsDto {
+	
+	private long postId;
+	private String email;
+	
+
+
+}

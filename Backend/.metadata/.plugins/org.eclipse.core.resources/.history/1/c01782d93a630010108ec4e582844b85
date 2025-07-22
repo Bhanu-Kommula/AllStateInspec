@@ -1,0 +1,31 @@
+package com.auto.technician.dashboard.dto;
+
+import java.util.Date;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import lombok.Data;
+
+@Data
+public class TechnicianPostsDTO {
+    @JsonIgnore // ✅ Will be hidden in the final JSON
+    private long postId;    // this is to get back the id as postid : 121 // as this field name is needed to get 
+    private String name;
+    private String email;
+    private String content;
+    private String location;
+    private String offerAmount;
+    private String Status;
+    
+    private String technicianEmail;
+    private String technicianName;
+    
+    private Date acceptedAt;
+    private Date completeBy;
+    
+    
+    
+
+}
+
+

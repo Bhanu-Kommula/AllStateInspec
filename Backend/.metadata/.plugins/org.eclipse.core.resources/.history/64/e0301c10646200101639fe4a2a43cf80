@@ -1,0 +1,98 @@
+package com.auto.tech.controller;
+
+import java.util.List;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.auto.tech.dto.GetAllTechAcceptedPostsbyEmail;
+import com.auto.tech.dto.LoginTechnicanDto;
+import com.auto.tech.dto.TechAcceptedPostsDto;
+import com.auto.tech.dto.TechDeclinedPostsDto;
+import com.auto.tech.dto.TechInfoToGetPostsByLocationDto;
+import com.auto.tech.model.TechAcceptedPost;
+import com.auto.tech.model.TechDeclinedPosts;
+import com.auto.tech.model.Technician;
+import com.auto.tech.service.TechnicianService;
+
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+
+@RestController
+@RequiredArgsConstructor
+public class TechnicianController {
+	
+	private final TechnicianService service;
+	
+	@PostMapping("/register")
+	public ResponseEntity<?> register(@Valid @RequestBody Technician technician) {
+		
+		service.register(technician);
+		
+		return ResponseEntity.status(201).body(technician);
+		
+	}
+	
+	
+	@PostMapping("/login")
+	public ResponseEntity<?> login( @RequestBody LoginTechnicanDto dealer){
+	
+	
+    return service.login(dealer.getEmail());
+	
+    
+}
+	
+    @PostMapping("/technician-posts-by-techloc")
+    public List<PostingDTO> getAllPostingsFromPostingsService(@RequestBody TechInfoToGetPostsByLocationDto email) {
+        return service.fetchAllPostings(email);
+    }
+    
+    
+    
+    
+    @PostMapping("/save-accepted-posts")
+    public void techAcceptedPosts(@RequestBody TechAcceptedPostsDto dto ) {
+    	
+    	TechAcceptedPost acceptedPosts = TechAcceptedPost.builder()
+    			.email(dto.getEmail())
+    			.postId(dto.getPostId())
+    			.build();
+    	
+    	service.techAcceptedPosts(acceptedPosts);
+    }
+
+    
+    
+    
+    @PostMapping("get-accpeted-posts")
+    public ResponseEntity<?> getTechAcceptedPosts(@RequestBody GetAllTechAcceptedPostsbyEmail dto){
+    	
+    	
+		return service.getAcceptedPosts(dto);
+    	
+    	
+    }
+    
+    
+    
+    
+    
+    
+
+    @PostMapping("/declined-posts")
+    public void declinedPosts(@RequestBody TechDeclinedPostsDto declinedPosts) {
+    	
+    	TechDeclinedPosts posts = TechDeclinedPosts.builder()
+    			.email(declinedPosts.getEmail())
+    			.postId(declinedPosts.getPostId())
+    				.build();
+    	
+    	
+    	service.declinedPosts(posts);
+    	
+    	
+    }
+}

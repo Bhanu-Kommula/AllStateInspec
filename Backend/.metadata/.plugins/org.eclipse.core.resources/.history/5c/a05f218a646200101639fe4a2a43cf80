@@ -1,0 +1,5 @@
+package com.auto.technician.dashboard.controller;
+
+public class TechDashboardController {
+
+}

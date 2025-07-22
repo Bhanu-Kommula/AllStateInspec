@@ -1,0 +1,171 @@
+package com.auto.postings.service;
+
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+
+import com.auto.postings.client.DealerClient;
+import com.auto.postings.dto.DealerDTO;
+import com.auto.postings.dto.DeletePostRequestByIdDto;
+import com.auto.postings.dto.EditPostRequestDto;
+import com.auto.postings.dto.GetAllPostsByEmailRequestDto;
+import com.auto.postings.dto.GetByFiltersDto;
+import com.auto.postings.dto.LoginDealerDto;
+import com.auto.postings.model.PostStatus;
+import com.auto.postings.model.Posting;
+import com.auto.postings.repository.PostingRepository;
+import com.auto.postings.webSocket.WebSocketDealerNotifier;
+
+import lombok.RequiredArgsConstructor;
+
+@Service
+@RequiredArgsConstructor
+public class PostingService {
+
+	 private final DealerClient dealerClient;
+	    private final PostingRepository repo;
+	    private final WebSocketDealerNotifier webSocketDealerNotifier; // ✅ Inject
+
+	    public Posting savePosting(String email, String content, String location, String offerAmount, PostStatus status,  {
+	        LoginDealerDto loginDto = new LoginDealerDto(email, null);
+	        DealerDTO dealer = dealerClient.getDealer(loginDto);
+
+	        Posting posting = new Posting();
+	        posting.setEmail(dealer.getEmail());
+	        posting.setName(dealer.getName());
+	        posting.setContent(content);
+	        posting.setLocation(location);
+	        posting.setOfferAmount(offerAmount);
+	        posting.setStatus(status);
+	        posting.setCreatedAt(new Date());
+
+	        Posting saved = repo.save(posting);
+
+	        // ✅ Send real-time WebSocket broadcast to technicians
+	        webSocketDealerNotifier.notifyNewPost(saved);
+
+	        return saved;
+	    }
+
+	    
+	    public List<Posting> savemultiplePosting(String email, String content, String location, String offerAmount,
+				PostStatus status, Date statusUpdatedAt, String technicianEmail, String technicianName) {
+	        
+	    	 LoginDealerDto loginDto = new LoginDealerDto(email, null);
+		        DealerDTO dealer = dealerClient.getDealer(loginDto);
+
+		        Posting posting = new Posting();
+		        posting.setEmail(dealer.getEmail());
+		            posting.setName(dealer.getName());
+		        posting.setContent(content);
+		        posting.setLocation(location);
+		        posting.setOfferAmount(offerAmount);
+		        posting.setStatus(status);
+		        posting.setCreatedAt(new Date());
+		        posting.setStatusUpdatedAt(statusUpdatedAt);
+		        posting.setTechnicianEmail(technicianEmail);
+		        posting.setTechnicianName(technicianName);
+
+		        Posting saved = repo.save(posting);
+			
+			
+			return null;
+		}
+	    
+	    
+	    
+	    
+	    
+	    
+	    
+	    
+	    
+	    
+	    
+	public List<Posting> getAllPosts(GetAllPostsByEmailRequestDto dto) {
+		
+	    return repo.findByEmailOrderByIdDesc(dto.getEmail());
+	}
+	
+
+
+	public List<Posting> getAllPost() {
+	    return repo.findAll();
+	}
+
+	public String deletePostById(DeletePostRequestByIdDto dto) {
+		
+		Long id = dto.getId();
+		
+	    Optional<Posting> post = repo.findById(id);
+	    
+	   
+	    
+
+	    if (post.isPresent()) {
+	        repo.deleteById(id);
+	        
+	        return "Post deleted with ID: " + id;
+		} else {
+	       return "No post found with ID: " + id + ". Thank you";
+	    }
+	}
+
+
+	public String updatePostById(EditPostRequestDto dto) {
+	    Optional<Posting> optional = repo.findById(dto.getId());
+
+	    if (optional.isPresent()) {
+	        Posting post = optional.get();
+if( post.getStatus() != PostStatus.COMPLETED) {
+	        if (dto.getContent() != null) {
+	            post.setContent(dto.getContent());
+	        }
+	        if (dto.getLocation() != null) {
+	            post.setLocation(dto.getLocation());
+	        }
+	        if (dto.getOfferAmount() != null) {
+	            post.setOfferAmount(dto.getOfferAmount());
+	        }
+	        post.setUpdatedAt(new Date());
+
+
+	        repo.save(post);
+	        return "Post updated successfully with ID: " + dto.getId();
+	    } 
+	    
+	    return "Post Cannot be edited";
+	    }
+	
+	    else {
+	        return "Post not found with ID: " + dto.getId();
+	    
+	}
+	    }
+	
+
+	
+	public List<Posting> getByFilter(GetByFiltersDto dto) {
+	    
+	    List<Posting> posts = repo.findByEmailOrderByIdDesc(dto.getEmail());
+
+	    return posts.stream()
+	        .filter(p -> dto.getLocation() == null || p.getLocation().equalsIgnoreCase(dto.getLocation()))
+	        .filter(p -> dto.getOfferAmount() == null || p.getOfferAmount().equalsIgnoreCase(dto.getOfferAmount()))
+	        .filter(p -> dto.getStatus() == null || p.getStatus().name().equalsIgnoreCase(dto.getStatus()))
+	        .collect(Collectors.toList());
+	}
+
+	
+
+	}
+	
+	
+
+
+	
+    
+

@@ -1,0 +1,13 @@
+package com.auto.technician.dashboard.clients;
+
+import org.springframework.cloud.openfeign.FeignClient;
+
+
+@FeignClient(name = "postings")
+public interface PostingClient {
+
+
+   // @GetMapping("/post")
+   // List<PostingDTO> getAllPostings();
+
+}

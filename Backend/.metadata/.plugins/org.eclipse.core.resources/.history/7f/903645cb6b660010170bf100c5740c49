@@ -1,0 +1,170 @@
+package com.auto.tech.service;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+
+import com.auto.tech.client.PostingClient;
+import com.auto.tech.client.TechDashboardFeignClient;
+import com.auto.tech.configuration.WebSocketDealerNotifier;
+import com.auto.tech.dto.FeignEmailRequestDto;
+import com.auto.tech.dto.GetTechAccpetedPostsByEmailDto;
+import com.auto.tech.dto.PostingDTO;
+import com.auto.tech.dto.TechInfoToGetPostsByLocationDto;
+import com.auto.tech.model.TechAcceptedPost;
+import com.auto.tech.model.TechDeclinedPosts;
+import com.auto.tech.model.Technician;
+import com.auto.tech.model.WebSocketPostNotifier;
+import com.auto.tech.repository.AcceptedPostRepository;
+import com.auto.tech.repository.DeclinedPostsRepository;
+import com.auto.tech.repository.TechnicianRepository;
+
+import lombok.RequiredArgsConstructor;
+
+@Service
+@RequiredArgsConstructor
+public class TechnicianService {
+
+	private final TechnicianRepository repo;
+	private final PostingClient postingClient;
+	private final DeclinedPostsRepository declinedPostsRepo;
+	private final AcceptedPostRepository acceptedPostRepo;
+	private final WebSocketDealerNotifier dealerNotifier; // ✅ Add this
+
+	private final WebSocketPostNotifier postNotifier;
+	private final TechDashboardFeignClient techDashboardClient; // ✅ Injected Feign Client
+
+	public String capitalize(String str) {
+		if (str == null || str.isEmpty()) return str;
+		return str.substring(0, 1).toUpperCase() + str.substring(1).toLowerCase();
+	}
+
+	public Technician register(Technician technician) {
+		technician.setName(capitalize(technician.getName()));
+		technician.setLocation(capitalize(technician.getLocation()));
+		return repo.save(technician);
+	}
+
+	public ResponseEntity<?> login(String email) {
+		Optional<Technician> technicianOpt = repo.findByEmailIgnoreCase(email);
+		if (technicianOpt.isPresent()) {
+			return ResponseEntity.ok(technicianOpt.get());
+		} else {
+			Map<String, String> error = new HashMap<>();
+			error.put("error", "User not found. Please check your email.");
+			return ResponseEntity.status(401).body(error);
+		}
+	}
+
+	public List<PostingDTO> fetchAllPostings(TechInfoToGetPostsByLocationDto dto) {
+		Technician technician = repo.findByEmailIgnoreCase(dto.getEmail())
+				.orElseThrow(() -> new RuntimeException("Technician not found"));
+
+		String technicianCity = technician.getCity().trim();
+
+		List<Long> declinedPostIds = declinedPostsRepo.findAllPostIdsByEmail(dto.getEmail());
+		List<Long> acceptedPostIds = acceptedPostRepo.findAllAcceptedPostIds();
+
+		List<PostingDTO> allPostings = postingClient.getAllPostings();
+
+		return allPostings.stream()
+		        .filter(post -> {
+		            String location = post.getLocation();
+		            if (location != null) {
+		                String postCityOnly = location.split(",")[0].trim();
+		                return postCityOnly.equalsIgnoreCase(technicianCity)
+		                        && !declinedPostIds.contains(post.getId())
+		                        && (
+		                            !acceptedPostIds.contains(post.getId())
+		                            || acceptedPostRepo.existsByPostIdAndEmailIgnoreCase(post.getId(), dto.getEmail())
+		                        );
+		            }
+		            return false;
+		        })
+		        .collect(Collectors.toList());
+	}
+
+	public void declinedPosts(TechDeclinedPosts declinedPosts) {
+		declinedPostsRepo.save(declinedPosts);
+	}
+
+	
+	
+	public void techAcceptedPosts(TechAcceptedPost acceptedPost) {
+	    boolean alreadyAccepted = acceptedPostRepo.existsByPostId(acceptedPost.getPostId());
+	    if (alreadyAccepted) {
+	        throw new IllegalStateException("This post has already been accepted by another technician.");
+	    }
+
+	    acceptedPost.setAcceptedAt(new Date());
+	    acceptedPostRepo.save(acceptedPost);
+
+	    // Notify other technicians to remove the post
+	    postNotifier.notifyPostAccepted(acceptedPost.getPostId());
+
+	    FeignEmailRequestDto dto = new FeignEmailRequestDto();
+	    dto.setEmail(acceptedPost.getEmail());
+
+	    try {
+	        techDashboardClient.processAndUpdateAcceptedPosts(dto);
+
+	        // ✅ Get the updated post and push to dealer immediately
+	        PostingDTO updatedPost = postingClient.getPostById(acceptedPost.getPostId());
+	        dealerNotifier.notifyDealerPostUpdated(updatedPost);
+
+	    } catch (Exception e) {
+	        System.err.println("❌ Dealer update via Feign failed: " + e.getMessage());
+	    }
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	public List<PostingDTO> getFilteredFeed(TechInfoToGetPostsByLocationDto dto) {
+	    Technician technician = repo.findByEmailIgnoreCase(dto.getEmail())
+	            .orElseThrow(() -> new RuntimeException("Technician not found"));
+
+	    String technicianCity = technician.getCity().trim();
+
+	    List<Long> declinedPostIds = declinedPostsRepo.findAllPostIdsByEmail(dto.getEmail());
+	    List<Long> acceptedPostIds = acceptedPostRepo.findAllAcceptedPostIdsByEmail(dto.getEmail()); // ✅ only this technician’s accepted
+
+	    List<PostingDTO> allPostings = postingClient.getAllPostings();
+
+	    return allPostings.stream()
+	            .filter(post -> {
+	                String location = post.getLocation();
+	                if (location != null) {
+	                    String postCityOnly = location.split(",")[0].trim();
+	                    return postCityOnly.equalsIgnoreCase(technicianCity)
+	                            && !declinedPostIds.contains(post.getId())
+	                            && !acceptedPostIds.contains(post.getId());
+	                }
+	                return false;
+	            })
+	            .sorted((a, b) -> Long.compare(b.getId(), a.getId()))
+	            .collect(Collectors.toList());
+	}
+
+	public Optional<Technician> getTechnicianByEmail(GetTechAccpetedPostsByEmailDto email) {
+		return repo.findByEmailIgnoreCase(email.getEmail());
+	}
+
+	public List<Long> getAcceptedPostsByEmail(GetTechAccpetedPostsByEmailDto dto) {
+		return acceptedPostRepo.findAllAcceptedPostIdsByEmail(dto.getEmail());
+	}
+
+	public List<TechAcceptedPost> getAllAcceptedPostsWithTechnician() {
+	    return acceptedPostRepo.findAll();
+	}
+}

@@ -1,0 +1,9 @@
+package com.auto.technician.dashboard.model;
+
+import lombok.Data;
+
+@Data
+public class GetAllTechAcceptedPostsbyEmail {
+	private String email;
+
+}

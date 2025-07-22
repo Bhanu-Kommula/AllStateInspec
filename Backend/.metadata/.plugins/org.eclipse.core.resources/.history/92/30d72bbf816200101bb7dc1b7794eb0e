@@ -1,0 +1,19 @@
+package com.auto.tech.repository;
+
+import java.util.List;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param; // ✅ CORRECT
+import org.springframework.stereotype.Repository;
+
+import com.auto.tech.model.TechAcceptedPost;
+@Repository
+public interface AcceptedPostRepository extends JpaRepository<TechAcceptedPost, Long> {
+
+    @Query("SELECT t.postId FROM TechAcceptedPost t WHERE TRIM(LOWER(t.email)) = TRIM(LOWER(:email))")
+    List<Long> findAllAcceptedPostIdsByEmail(@Param("email") String email);
+
+    @Query("SELECT t.postId FROM TechAcceptedPost t") // ✅ Added this
+    List<Long> findAllAcceptedPostIds();
+}

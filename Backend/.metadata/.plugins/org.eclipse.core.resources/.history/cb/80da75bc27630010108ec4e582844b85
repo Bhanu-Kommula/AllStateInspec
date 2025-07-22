@@ -1,0 +1,27 @@
+package com.auto.technician.dashboard.clients;
+
+import java.util.List;
+
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+
+import com.auto.postings.dto.PostRequestDto;
+import com.auto.postings.model.Posting;
+import com.auto.technician.dashboard.dto.DealerPostUpdateDto;
+
+
+@FeignClient(name = "postings")
+public interface PostingClient {
+
+
+   // @GetMapping("/post")
+   // List<PostingDTO> getAllPostings();
+	
+	 
+	 
+	  @PostMapping("/update-multiple-acceptedpost-from-Techdash")
+	    public List<DealerPostUpdateDto> submitMultiplePost(@RequestBody List<DealerPostUpdateDto> request) ;
+	  
+
+}

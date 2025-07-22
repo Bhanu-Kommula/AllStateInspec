@@ -1,0 +1,24 @@
+package com.auto.technician.dashboard.clients;
+
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.PostMapping;
+
+import com.auto.technician.dashboard.dto.PostingDTO;
+import com.auto.technician.dashboard.dto.TechnicianDto;
+
+@FeignClient(name = "technician")
+public interface TechnicianClient {
+
+	
+	  @PostMapping("/technician-posts-by-techloc")
+	    public List<PostingDTO> getAllPostingsFromPostingsService() ;
+	 
+	  @PostMapping("/get-technician")
+	    public Optional<TechnicianDto> getTechnicianByEmail();
+	     
+	    
+
+}

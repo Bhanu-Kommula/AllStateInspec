@@ -1,0 +1,15 @@
+package com.auto.technician.dashboard.dto;
+
+import com.auto.technician.dashboard.clients.GetTechAccpetedPostsByEmailDto;
+
+import lombok.Data;
+
+@Data
+public class GetTechAccpetedPostsByEmailDto {
+	
+	private long postId;
+	private String email;
+	
+
+
+}

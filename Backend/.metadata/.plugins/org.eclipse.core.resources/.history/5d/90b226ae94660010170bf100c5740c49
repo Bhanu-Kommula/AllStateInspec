@@ -1,0 +1,54 @@
+package com.auto.dealer.service;
+
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+
+import com.auto.dealer.dto.PostingDto;
+import com.auto.dealer.dto.UpdateDealerDto;
+import com.auto.dealer.model.Dealer;
+import com.auto.dealer.model.DealerAuditLog;
+import com.auto.dealer.repository.DealerAuditLogRepository;
+import com.auto.dealer.repository.DealerRepository;
+
+import lombok.RequiredArgsConstructor;
+
+@Service
+@RequiredArgsConstructor
+public class DealerService {
+	
+	private final DealerRepository repo;
+    private final DealerAuditLogRepository auditRepo;
+
+	public Dealer register(Dealer dealer) {
+		repo.save(dealer);
+		return dealer;
+	}
+	
+	
+	
+	public ResponseEntity<?> login(String email) {
+	    Optional<Dealer> dealerOpt = repo.findByEmail(email);
+
+	    if (dealerOpt.isPresent()) {
+	        Dealer dealer = dealerOpt.get();
+	        PostingDto postingInfo = PostingDto.builder()
+	        		.email(dealer.getEmail())
+	        		.name(dealer.getName())
+	        		.build();
+	        return ResponseEntity.ok(postingInfo); 
+	    } else {
+	        Map<String, String> error = new HashMap<>();
+	        error.put("error", "User not found. Please check your email.");
+	        return ResponseEntity.status(401).body(error);
+	    }
+	}
+
+	
+	
+
+}

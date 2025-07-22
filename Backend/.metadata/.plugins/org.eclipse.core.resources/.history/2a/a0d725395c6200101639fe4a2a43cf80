@@ -1,0 +1,5 @@
+package com.auto.tech.repository;
+
+public interface AcceptedPostRepository {
+
+}
