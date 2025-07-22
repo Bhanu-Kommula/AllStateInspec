@@ -1,2 +1,0 @@
-# AllStateInspec
-First version
